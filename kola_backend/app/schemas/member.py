@@ -1,0 +1,27 @@
+from __future__ import annotations
+
+from datetime import datetime
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, EmailStr
+
+
+class MemberCreate(BaseModel):
+    full_name: str
+    phone: str
+    email: EmailStr | None = None
+
+
+class MemberRead(BaseModel):
+    id: UUID
+    group_id: UUID
+    full_name: str
+    phone: str
+    email: str | None
+    squad_customer_id: str | None
+    squad_va_id: str | None
+    squad_va_number: str | None
+    squad_va_bank: str | None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

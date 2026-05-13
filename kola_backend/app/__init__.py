@@ -1,0 +1,1 @@
+"""KOLA backend application package."""
