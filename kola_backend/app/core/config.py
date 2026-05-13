@@ -10,8 +10,9 @@ class Settings(BaseSettings):
     supabase_database_url: str = Field(..., alias="SUPABASE_DATABASE_URL")
     squad_secret_key: str = Field(..., alias="SQUAD_SECRET_KEY")
     squad_public_key: str = Field(..., alias="SQUAD_PUBLIC_KEY")
-    squad_base_url: AnyHttpUrl = Field("https://sandbox.squadco.com", alias="SQUAD_BASE_URL")
-    webhook_secret: str = Field(..., alias="WEBHOOK_SECRET")
+    squad_base_url: AnyHttpUrl = Field("https://sandbox-api-d.squadco.com", alias="SQUAD_BASE_URL")
+    webhook_secret: str | None = Field(default=None, alias="WEBHOOK_SECRET")
+    squad_beneficiary_account: str | None = Field(default=None, alias="SQUAD_BENEFICIARY_ACCOUNT")
     environment: str = Field("development", alias="ENVIRONMENT")
     api_key: str = Field("change-me", alias="API_KEY")
     backend_cors_origins: list[str] = Field(default_factory=list, alias="BACKEND_CORS_ORIGINS")
@@ -32,6 +33,10 @@ class Settings(BaseSettings):
         if isinstance(value, str):
             return [origin.strip() for origin in value.split(",") if origin.strip()]
         return value
+
+    @property
+    def squad_webhook_secret(self) -> str:
+        return self.webhook_secret or self.squad_secret_key
 
 
 @lru_cache

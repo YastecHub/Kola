@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from decimal import Decimal
+import json
 from typing import Any
 
 import httpx
 from loguru import logger
 
 from app.core.config import settings
-from app.utils.hmac import verify_hmac_sha512
+from app.utils.hmac import compute_hmac_sha512, normalize_signature, verify_hmac_sha512
 
 
 class SquadError(RuntimeError):
@@ -60,14 +61,26 @@ class SquadService:
         phone: str,
         email: str | None,
         customer_identifier: str,
+        middle_name: str | None = None,
+        bvn: str | None = None,
+        dob: str | None = None,
+        gender: str | None = None,
+        address: str | None = None,
+        beneficiary_account: str | None = None,
     ) -> VirtualAccountResult:
         first_name, _, last_name = full_name.partition(" ")
         payload = {
             "first_name": first_name,
             "last_name": last_name or first_name,
+            "middle_name": middle_name,
             "mobile_num": phone,
             "email": email,
+            "bvn": bvn,
+            "dob": dob,
+            "gender": gender,
+            "address": address,
             "customer_identifier": customer_identifier,
+            "beneficiary_account": beneficiary_account or settings.squad_beneficiary_account,
         }
         payload = {key: value for key, value in payload.items() if value is not None}
         data = await self._request("POST", "/virtual-account", json=payload)
@@ -82,8 +95,39 @@ class SquadService:
             raw=data,
         )
 
-    def verify_webhook_signature(self, payload: bytes, signature: str) -> bool:
-        return verify_hmac_sha512(settings.webhook_secret, payload, signature)
+    def verify_webhook_signature(
+        self,
+        payload: bytes,
+        signature: str,
+        parsed_payload: dict[str, Any] | None = None,
+    ) -> bool:
+        secret = settings.squad_webhook_secret
+        if verify_hmac_sha512(secret, payload, signature):
+            return True
+
+        if parsed_payload is not None:
+            compact_json = json.dumps(parsed_payload, separators=(",", ":"), ensure_ascii=False)
+            if compute_hmac_sha512(secret, compact_json) == normalize_signature(signature):
+                return True
+
+            pipe_signature = self._virtual_account_signature_string(parsed_payload)
+            if pipe_signature and compute_hmac_sha512(secret, pipe_signature) == normalize_signature(signature):
+                return True
+
+        return False
+
+    def _virtual_account_signature_string(self, payload: dict[str, Any]) -> str | None:
+        required_fields = (
+            "transaction_reference",
+            "virtual_account_number",
+            "currency",
+            "principal_amount",
+            "settled_amount",
+            "customer_identifier",
+        )
+        if not all(payload.get(field) is not None for field in required_fields):
+            return None
+        return "|".join(str(payload[field]) for field in required_fields)
 
     async def verify_transaction(self, transaction_reference: str) -> dict[str, Any]:
         if not transaction_reference:

@@ -47,14 +47,37 @@ async def find_member_for_payload(session: AsyncSession, payload: dict[str, Any]
     account_number = _first(
         payload,
         (
+            "virtual_account_number",
             "data.virtual_account_number",
             "data.account_number",
+            "Body.virtual_account_number",
+            "Body.account_number",
             "virtual_account_number",
             "account_number",
         ),
     )
-    phone = _first(payload, ("data.customer.mobile_num", "data.mobile_num", "customer.mobile_num", "phone"))
-    customer_id = _first(payload, ("data.customer_id", "data.customer.id", "customer_id"))
+    phone = _first(
+        payload,
+        (
+            "data.customer.mobile_num",
+            "data.mobile_num",
+            "Body.customer_mobile",
+            "Body.mobile_num",
+            "customer.mobile_num",
+            "phone",
+        ),
+    )
+    customer_id = _first(
+        payload,
+        (
+            "customer_identifier",
+            "data.customer_identifier",
+            "data.customer_id",
+            "data.customer.id",
+            "Body.customer_identifier",
+            "customer_id",
+        ),
+    )
 
     conditions = []
     if account_number:
@@ -78,22 +101,44 @@ async def store_squad_event(
     signature: str,
     verified_transaction: dict[str, Any] | None = None,
 ) -> EconomicEvent:
-    event_type = str(_first(payload, ("event", "type", "event_type")) or "unknown")
-    event_id = _first(payload, ("id", "event_id", "data.id", "data.transaction_id"))
+    event_type = str(
+        _first(payload, ("event", "Event", "type", "event_type", "channel", "Body.transaction_type")) or "unknown"
+    )
+    event_id = _first(
+        payload,
+        (
+            "transaction_uuid",
+            "TransactionRef",
+            "transaction_reference",
+            "id",
+            "event_id",
+            "data.id",
+            "data.transaction_id",
+            "Body.transaction_ref",
+        ),
+    )
     transaction_reference = _first(
         payload,
         (
+            "transaction_reference",
+            "TransactionRef",
             "data.transaction_ref",
             "data.transaction_reference",
             "data.reference",
+            "Body.transaction_ref",
+            "Body.transaction_reference",
+            "Body.gateway_ref",
             "transaction_ref",
-            "transaction_reference",
             "reference",
         ),
     )
-    amount = parse_amount(_first(payload, ("data.amount", "amount", "data.principal_amount")))
-    currency = str(_first(payload, ("data.currency", "currency")) or "NGN")
-    occurred_at = _parse_timestamp(_first(payload, ("created_at", "data.created_at", "data.transaction_date")))
+    amount = parse_amount(
+        _first(payload, ("principal_amount", "data.amount", "amount", "data.principal_amount", "Body.amount"))
+    )
+    currency = str(_first(payload, ("currency", "data.currency", "Body.currency")) or "NGN")
+    occurred_at = _parse_timestamp(
+        _first(payload, ("transaction_date", "created_at", "data.created_at", "data.transaction_date", "Body.created_at"))
+    )
     member = await find_member_for_payload(session, payload)
 
     values = {

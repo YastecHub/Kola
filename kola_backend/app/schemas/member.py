@@ -10,6 +10,11 @@ class MemberCreate(BaseModel):
     full_name: str
     phone: str
     email: EmailStr | None = None
+    middle_name: str | None = None
+    bvn: str | None = None
+    dob: str | None = None
+    gender: str | None = None
+    address: str | None = None
 
 
 class MemberRead(BaseModel):

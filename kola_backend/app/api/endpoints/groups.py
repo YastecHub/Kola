@@ -43,6 +43,11 @@ async def create_group(payload: GroupCreate, session: AsyncSession = Depends(db_
                 phone=member.phone,
                 email=member.email,
                 customer_identifier=str(member.id),
+                middle_name=member_payload.middle_name,
+                bvn=member_payload.bvn,
+                dob=member_payload.dob,
+                gender=member_payload.gender,
+                address=member_payload.address,
             )
             member.squad_customer_id = va.customer_id
             member.squad_va_id = va.va_id

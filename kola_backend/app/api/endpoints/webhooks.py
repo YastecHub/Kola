@@ -30,27 +30,37 @@ async def ingest_squad_webhook(
     session: AsyncSession = Depends(db_session),
     x_squad_signature: str | None = Header(default=None),
     x_signature: str | None = Header(default=None),
+    x_squad_encrypted_body: str | None = Header(default=None),
 ) -> WebhookIngestResponse:
     raw_body = await request.body()
-    signature = _get_signature(x_squad_signature=x_squad_signature, x_signature=x_signature)
-    squad = SquadService()
-
-    if not squad.verify_webhook_signature(raw_body, signature):
-        logger.warning("Rejected Squad webhook with invalid signature")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid webhook signature",
-        )
-
     try:
         payload: dict[str, Any] = await request.json()
     except Exception as exc:
         logger.warning("Rejected Squad webhook with invalid JSON")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid JSON payload") from exc
 
+    signature = _get_signature(
+        x_squad_signature=x_squad_signature,
+        x_signature=x_signature or x_squad_encrypted_body,
+    )
+    squad = SquadService()
+
+    if not squad.verify_webhook_signature(raw_body, signature, payload):
+        logger.warning("Rejected Squad webhook with invalid signature")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid webhook signature",
+        )
+
     verification = None
-    data = payload.get("data") or {}
-    transaction_reference = data.get("transaction_ref") or data.get("transaction_reference") or data.get("reference")
+    data = payload.get("data") or payload.get("Body") or {}
+    transaction_reference = (
+        payload.get("transaction_reference")
+        or payload.get("TransactionRef")
+        or data.get("transaction_ref")
+        or data.get("transaction_reference")
+        or data.get("reference")
+    )
     if transaction_reference:
         try:
             verification = await squad.verify_transaction(str(transaction_reference))
