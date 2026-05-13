@@ -8,6 +8,8 @@ services:
     envVars:
       - key: ENVIRONMENT
         value: production
+      - key: PYTHON_VERSION
+        value: 3.11.11
       - key: SUPABASE_DATABASE_URL
         sync: false
       - key: SQUAD_SECRET_KEY
