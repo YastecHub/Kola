@@ -24,6 +24,12 @@ Copy-Item .env.example .env
 
 Edit `.env` with your Supabase and Squad credentials.
 
+For local endpoint testing without calling Squad, set:
+
+```env
+SQUAD_MOCK_MODE=true
+```
+
 Squad sandbox base URL:
 
 ```env

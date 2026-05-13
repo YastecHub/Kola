@@ -33,16 +33,17 @@ async def ingest_squad_webhook(
     x_squad_encrypted_body: str | None = Header(default=None),
 ) -> WebhookIngestResponse:
     raw_body = await request.body()
+    signature = _get_signature(
+        x_squad_signature=x_squad_signature,
+        x_signature=x_signature or x_squad_encrypted_body,
+    )
+
     try:
         payload: dict[str, Any] = await request.json()
     except Exception as exc:
         logger.warning("Rejected Squad webhook with invalid JSON")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid JSON payload") from exc
 
-    signature = _get_signature(
-        x_squad_signature=x_squad_signature,
-        x_signature=x_signature or x_squad_encrypted_body,
-    )
     squad = SquadService()
 
     if not squad.verify_webhook_signature(raw_body, signature, payload):

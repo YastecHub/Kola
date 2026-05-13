@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 import json
+import uuid
 from typing import Any
 
 import httpx
@@ -68,6 +69,9 @@ class SquadService:
         address: str | None = None,
         beneficiary_account: str | None = None,
     ) -> VirtualAccountResult:
+        if settings.squad_mock_mode:
+            return self._mock_virtual_account(customer_identifier)
+
         first_name, _, last_name = full_name.partition(" ")
         payload = {
             "first_name": first_name,
@@ -93,6 +97,16 @@ class SquadService:
             bank_name=account.get("bank_name") or account.get("bank"),
             customer_id=str(body.get("customer_id") or account.get("customer_id") or customer_identifier),
             raw=data,
+        )
+
+    def _mock_virtual_account(self, customer_identifier: str) -> VirtualAccountResult:
+        suffix = str(abs(hash(customer_identifier)))[:8].zfill(8)
+        return VirtualAccountResult(
+            va_id=f"mock_va_{uuid.uuid4().hex[:12]}",
+            account_number=f"99{suffix}"[:10],
+            bank_name="KOLA Mock Bank",
+            customer_id=customer_identifier,
+            raw={"mock": True, "customer_identifier": customer_identifier},
         )
 
     def verify_webhook_signature(
