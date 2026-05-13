@@ -8,6 +8,7 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+from app.core.runtime import configure_windows_event_loop
 from app.core.config import settings
 from app.core.database import Base
 from app.models.contribution import KolaScoreHistory
@@ -15,8 +16,10 @@ from app.models.event import EconomicEvent
 from app.models.group import AjoGroup
 from app.models.member import GroupMember
 
+configure_windows_event_loop()
+
 config = context.config
-config.set_main_option("sqlalchemy.url", settings.supabase_database_url)
+config.set_main_option("sqlalchemy.url", settings.sqlalchemy_database_url)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
@@ -26,7 +29,7 @@ target_metadata = Base.metadata
 
 def run_migrations_offline() -> None:
     context.configure(
-        url=settings.supabase_database_url,
+        url=settings.sqlalchemy_database_url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},

@@ -24,6 +24,12 @@ Copy-Item .env.example .env
 
 Edit `.env` with your Supabase and Squad credentials.
 
+For local endpoint testing without calling Squad, set:
+
+```env
+SQUAD_MOCK_MODE=true
+```
+
 Squad sandbox base URL:
 
 ```env
@@ -135,6 +141,10 @@ Response shape:
 
 ## Notes For Production
 
+- On Render, set `Root Directory` to `kola_backend`.
+- Set `PYTHON_VERSION` to `3.11.11`, or keep the included `.python-version` file.
+- Use `pip install -r requirements.txt` as the build command.
+- Use `uvicorn app.main:app --host 0.0.0.0 --port $PORT` as the start command.
 - Confirm the exact Squad virtual-account endpoint and response fields against the active Squad account.
 - Add Redis-backed rate limiting for `/api/scores/*`.
 - Move score recalculation into a durable background worker.

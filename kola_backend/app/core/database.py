@@ -29,7 +29,7 @@ class TimestampMixin:
 
 
 engine = create_async_engine(
-    settings.supabase_database_url,
+    settings.sqlalchemy_database_url,
     pool_pre_ping=True,
     echo=settings.environment == "development",
 )

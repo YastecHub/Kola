@@ -1,7 +1,12 @@
 from __future__ import annotations
 
+from app.core.runtime import configure_windows_event_loop
+
+configure_windows_event_loop()
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 from loguru import logger
 
 from app.api.endpoints import groups, scores, webhooks
@@ -17,7 +22,7 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.backend_cors_origins,
+        allow_origins=settings.cors_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -31,6 +36,19 @@ def create_app() -> FastAPI:
     async def health() -> dict[str, str]:
         logger.debug("Health check requested")
         return {"status": "ok", "environment": settings.environment}
+
+    @app.get("/", include_in_schema=False)
+    async def root() -> dict[str, str]:
+        return {
+            "name": "KOLA Backend",
+            "health": "/health",
+            "docs": "/docs",
+            "openapi": "/openapi.json",
+        }
+
+    @app.get("/api/docs", include_in_schema=False)
+    async def api_docs_redirect() -> RedirectResponse:
+        return RedirectResponse(url="/docs")
 
     return app
 

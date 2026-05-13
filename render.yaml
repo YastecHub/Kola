@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: kola-backend
+    runtime: python
+    rootDir: kola_backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: SUPABASE_DATABASE_URL
+        sync: false
+      - key: SQUAD_SECRET_KEY
+        sync: false
+      - key: SQUAD_PUBLIC_KEY
+        sync: false
+      - key: SQUAD_BASE_URL
+        value: https://api-d.squadco.com
+      - key: SQUAD_MOCK_MODE
+        value: false
+      - key: WEBHOOK_SECRET
+        sync: false
+      - key: SQUAD_BENEFICIARY_ACCOUNT
+        sync: false
+      - key: API_KEY
+        sync: false
+      - key: BACKEND_CORS_ORIGINS
+        sync: false

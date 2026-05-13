@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from loguru import logger
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import db_session
@@ -9,13 +10,14 @@ from app.core.security import require_api_key
 from app.models.group import AjoGroup
 from app.models.member import GroupMember
 from app.schemas.group import GroupCreate, GroupRead
+from app.schemas.member import MemberRead
 from app.services.squad import SquadError, SquadService
 
 router = APIRouter()
 
 
 @router.post("/", response_model=GroupRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_api_key)])
-async def create_group(payload: GroupCreate, session: AsyncSession = Depends(db_session)) -> AjoGroup:
+async def create_group(payload: GroupCreate, session: AsyncSession = Depends(db_session)) -> GroupRead:
     group = AjoGroup(
         name=payload.name,
         description=payload.description,
@@ -56,6 +58,13 @@ async def create_group(payload: GroupCreate, session: AsyncSession = Depends(db_
             members.append(member)
 
         await session.commit()
+    except IntegrityError as exc:
+        await session.rollback()
+        logger.warning("Unable to create group due to duplicate or invalid database value")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Group member phone or virtual account already exists",
+        ) from exc
     except SquadError as exc:
         await session.rollback()
         logger.exception("Unable to create Squad virtual accounts for group")
@@ -68,5 +77,12 @@ async def create_group(payload: GroupCreate, session: AsyncSession = Depends(db_
         logger.exception("Unable to create group")
         raise
 
-    group.members = members
-    return group
+    return GroupRead(
+        id=group.id,
+        name=group.name,
+        description=group.description,
+        contribution_amount=group.contribution_amount,
+        contribution_frequency=group.contribution_frequency,
+        created_at=group.created_at,
+        members=[MemberRead.model_validate(member) for member in members],
+    )
