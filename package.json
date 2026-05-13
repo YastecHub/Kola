@@ -34,3 +34,8 @@
     "typescript": "^5.9.3"
   }
 }
+{
+  "vercel": {
+    "outputDirectory": ".next"
+  }
+}
