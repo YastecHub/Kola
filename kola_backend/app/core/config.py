@@ -3,6 +3,7 @@ from __future__ import annotations
 from functools import lru_cache
 
 from pydantic import AnyHttpUrl, Field
+from pydantic_core import ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -47,7 +48,18 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    try:
+        return Settings()
+    except ValidationError as exc:
+        missing_fields = [
+            ".".join(str(part) for part in error["loc"])
+            for error in exc.errors()
+            if error.get("type") == "missing"
+        ]
+        if missing_fields:
+            fields = ", ".join(missing_fields)
+            raise RuntimeError(f"Missing required environment variable(s): {fields}") from exc
+        raise
 
 
 settings = get_settings()
