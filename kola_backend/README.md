@@ -7,7 +7,7 @@ FastAPI backend for KOLA, Nigeria's informal credit bureau for Ajo groups. Squad
 - Async FastAPI app with SQLAlchemy 2.0 and Alembic.
 - Supabase PostgreSQL configuration through `pydantic-settings`.
 - Squad virtual account creation flow for group members.
-- Squad webhook ingestion with raw-body HMAC-SHA512 verification before JSON parsing.
+- Squad webhook ingestion with HMAC-SHA512 verification for full-body and virtual-account v2/v3 signatures.
 - Immutable economic event storage with raw payload and signature.
 - Internal API key protection for group creation and score queries.
 - Provisional score query API while the ML scoring service is pending.
@@ -23,6 +23,12 @@ Copy-Item .env.example .env
 ```
 
 Edit `.env` with your Supabase and Squad credentials.
+
+Squad sandbox base URL:
+
+```env
+SQUAD_BASE_URL=https://sandbox-api-d.squadco.com
+```
 
 Run migrations:
 
@@ -44,13 +50,15 @@ curl http://127.0.0.1:8000/health
 
 ## Security
 
-Squad webhooks must include an HMAC-SHA512 signature in `X-Squad-Signature` or `X-Signature`.
+Squad webhooks must include an HMAC-SHA512 signature in `X-Squad-Signature`, `X-Signature`, or the older `X-Squad-Encrypted-Body` header.
 
-The server computes:
+For standard payment webhooks, the server checks the HMAC of the body using your Squad secret key. For virtual-account v2/v3 webhooks, it also checks this Squad signature string:
 
-```python
-hmac.new(WEBHOOK_SECRET.encode("utf-8"), raw_request_body, sha512).hexdigest()
+```text
+transaction_reference|virtual_account_number|currency|principal_amount|settled_amount|customer_identifier
 ```
+
+`WEBHOOK_SECRET` is optional. If it is empty, the backend uses `SQUAD_SECRET_KEY`, which matches Squad's webhook documentation.
 
 The signature is verified before the request body is trusted or persisted. Invalid signatures receive `401`.
 
@@ -72,18 +80,26 @@ curl -X POST http://127.0.0.1:8000/api/groups/ `
     "contribution_amount": "5000.00",
     "contribution_frequency": "weekly",
     "members": [
-      {"full_name": "Amina Bello", "phone": "2348012345678", "email": "amina@example.com"}
+      {
+        "full_name": "Amina Bello",
+        "phone": "08012345678",
+        "email": "amina@example.com",
+        "bvn": "22343211654",
+        "dob": "07/19/1990",
+        "gender": "2",
+        "address": "22 Broad Street, Lagos"
+      }
     ]
   }'
 ```
 
-The response includes Squad virtual account details for each member.
+The response includes Squad virtual account details for each member. BVN and other KYC fields are sent to Squad for account creation but are not stored in KOLA's member table.
 
 ## Test Webhook Signature Locally
 
 ```powershell
 $body = '{"event":"transaction.success","data":{"id":"evt_test_1","transaction_ref":"KOLA_TEST_REF","amount":500000,"currency":"NGN"}}'
-$secret = "your_hmac_secret_here"
+$secret = "sk_test_your_secret_key"
 $hmac = New-Object System.Security.Cryptography.HMACSHA512
 $hmac.Key = [Text.Encoding]::UTF8.GetBytes($secret)
 $signature = -join ($hmac.ComputeHash([Text.Encoding]::UTF8.GetBytes($body)) | ForEach-Object { $_.ToString("x2") })
