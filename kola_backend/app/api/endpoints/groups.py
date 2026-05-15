@@ -73,6 +73,8 @@ async def create_group(payload: GroupCreate, session: AsyncSession = Depends(db_
             detail["squad_status_code"] = exc.status_code
         if exc.response_body is not None:
             detail["squad_response"] = exc.response_body
+        if exc.upstream_url is not None:
+            detail["upstream_url"] = exc.upstream_url
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=detail,

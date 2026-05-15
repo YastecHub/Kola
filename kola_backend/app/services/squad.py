@@ -6,6 +6,7 @@ import json
 import re
 import uuid
 from typing import Any
+from urllib.parse import urljoin
 
 import httpx
 from loguru import logger
@@ -21,11 +22,13 @@ class SquadError(RuntimeError):
         *,
         status_code: int | None = None,
         response_body: dict[str, Any] | str | None = None,
+        upstream_url: str | None = None,
     ) -> None:
         super().__init__(message)
         self.message = message
         self.status_code = status_code
         self.response_body = response_body
+        self.upstream_url = upstream_url
 
 
 @dataclass(slots=True)
@@ -55,8 +58,16 @@ class SquadService:
         json: dict[str, Any] | None = None,
         params: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        client = self._client or httpx.AsyncClient(base_url=str(settings.squad_base_url), timeout=30)
+        base_url = settings.squad_api_base_url
+        if not settings.is_squad_base_url_supported:
+            logger.warning(
+                "Unsupported SQUAD_BASE_URL configured: {}; using {}",
+                settings.squad_configured_base_url,
+                base_url,
+            )
+        client = self._client or httpx.AsyncClient(base_url=base_url, timeout=30)
         close_client = self._client is None
+        upstream_url = urljoin(f"{base_url}/", path.lstrip("/"))
         try:
             response = await client.request(method, path, headers=self.headers, json=json, params=params)
             response.raise_for_status()
@@ -71,10 +82,11 @@ class SquadService:
                 "Squad API request failed",
                 status_code=exc.response.status_code,
                 response_body=response_body,
+                upstream_url=str(exc.request.url),
             ) from exc
         except httpx.HTTPError as exc:
             logger.exception("Squad API transport error")
-            raise SquadError("Unable to reach Squad API") from exc
+            raise SquadError("Unable to reach Squad API", upstream_url=upstream_url) from exc
         finally:
             if close_client:
                 await client.aclose()

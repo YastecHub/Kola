@@ -181,6 +181,7 @@ X-API-Key: <api-key>
 They proxy relevant Squad APIs through the backend so the frontend/demo never exposes the Squad secret key.
 
 ```http
+GET /api/squad/config
 POST /api/squad/transactions/initiate
 GET /api/squad/transactions/{transaction_reference}/verify
 GET /api/squad/transactions?currency=NGN&start_date=2026-05-01&end_date=2026-05-15&page=1&perpage=50

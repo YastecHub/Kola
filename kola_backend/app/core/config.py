@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from urllib.parse import urlparse
 
 from pydantic import AnyHttpUrl, Field
 from pydantic_core import ValidationError
@@ -39,6 +40,22 @@ class Settings(BaseSettings):
     @property
     def squad_webhook_secret(self) -> str:
         return self.webhook_secret or self.squad_secret_key
+
+    @property
+    def squad_configured_base_url(self) -> str:
+        return str(self.squad_base_url).rstrip("/")
+
+    @property
+    def squad_api_base_url(self) -> str:
+        configured_url = self.squad_configured_base_url
+        host = urlparse(configured_url).hostname
+        if host in {"sandbox-api-d.squadco.com", "api-d.squadco.com"}:
+            return configured_url
+        return "https://sandbox-api-d.squadco.com"
+
+    @property
+    def is_squad_base_url_supported(self) -> bool:
+        return self.squad_api_base_url == self.squad_configured_base_url
 
     @property
     def sqlalchemy_database_url(self) -> str:
