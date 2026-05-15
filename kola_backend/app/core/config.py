@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     api_key: str = Field("change-me", alias="API_KEY")
     backend_cors_origins: str = Field("", alias="BACKEND_CORS_ORIGINS")
     kola_score_api_rate_limit_per_minute: int = Field(60, alias="KOLA_SCORE_API_RATE_LIMIT_PER_MINUTE")
+    kola_ai_url: AnyHttpUrl | None = Field(default=None, alias="KOLA_AI_URL")
+    kola_ai_key: str = Field("kola-dev-key-2025", alias="KOLA_AI_KEY")
+    kola_ai_timeout_seconds: float = Field(5.0, alias="KOLA_AI_TIMEOUT_SECONDS")
 
     model_config = SettingsConfigDict(
         env_file=".env",
