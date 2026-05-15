@@ -10,7 +10,8 @@ FastAPI backend for KOLA, Nigeria's informal credit bureau for Ajo groups. Squad
 - Squad webhook ingestion with HMAC-SHA512 verification for full-body and virtual-account v2/v3 signatures.
 - Immutable economic event storage with raw payload and signature.
 - Internal API key protection for group creation and score queries.
-- Provisional score query API while the ML scoring service is pending.
+- KOLA AI score service integration with SHAP/anomaly fields and safe fallback scoring.
+- Protected Squad gateway routes for transaction initiation/verification, virtual-account queries, dynamic virtual accounts, webhook error logs, and payout transfers.
 
 ## Setup
 
@@ -34,6 +35,14 @@ Squad sandbox base URL:
 
 ```env
 SQUAD_BASE_URL=https://sandbox-api-d.squadco.com
+```
+
+KOLA AI service:
+
+```env
+KOLA_AI_URL=https://web-production-48a47.up.railway.app
+KOLA_AI_KEY=kola-dev-key-2025
+KOLA_AI_TIMEOUT_SECONDS=5
 ```
 
 Run migrations:
@@ -138,6 +147,30 @@ Response shape:
   "events": []
 }
 ```
+
+If `KOLA_AI_URL` is configured, score queries call the AI service `POST /score` with Squad-verified events and return the XGBoost score, SHAP breakdown, anomaly fields, and confidence details. If the AI service is unavailable, KOLA keeps serving the fallback score instead of failing the lender query.
+
+## Protected Squad Gateway
+
+These routes require `X-API-Key` and call Squad with the backend secret key:
+
+- `POST /api/squad/transactions/initiate`
+- `GET /api/squad/transactions/{transaction_reference}/verify`
+- `GET /api/squad/transactions`
+- `GET /api/squad/virtual-accounts`
+- `GET /api/squad/virtual-accounts/number/{virtual_account_number}`
+- `GET /api/squad/virtual-accounts/customer/{customer_identifier}`
+- `GET /api/squad/virtual-accounts/customer/{customer_identifier}/transactions`
+- `GET /api/squad/virtual-accounts/webhook-error-logs`
+- `DELETE /api/squad/virtual-accounts/webhook-error-logs/{transaction_reference}`
+- `POST /api/squad/virtual-accounts/dynamic`
+- `POST /api/squad/virtual-accounts/dynamic/initiate`
+- `GET /api/squad/virtual-accounts/dynamic/{transaction_reference}/transactions`
+- `POST /api/squad/virtual-accounts/simulate-payment`
+- `POST /api/squad/transfers/account-lookup`
+- `POST /api/squad/transfers`
+- `POST /api/squad/transfers/{transaction_reference}/requery`
+- `GET /api/squad/transfers`
 
 ## Notes For Production
 

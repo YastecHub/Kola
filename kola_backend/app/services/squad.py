@@ -37,11 +37,17 @@ class SquadService:
             "Content-Type": "application/json",
         }
 
-    async def _request(self, method: str, path: str, json: dict[str, Any] | None = None) -> dict[str, Any]:
+    async def _request(
+        self,
+        method: str,
+        path: str,
+        json: dict[str, Any] | None = None,
+        params: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         client = self._client or httpx.AsyncClient(base_url=str(settings.squad_base_url), timeout=30)
         close_client = self._client is None
         try:
-            response = await client.request(method, path, headers=self.headers, json=json)
+            response = await client.request(method, path, headers=self.headers, json=json, params=params)
             response.raise_for_status()
             data: dict[str, Any] = response.json()
         except httpx.HTTPStatusError as exc:
@@ -147,6 +153,69 @@ class SquadService:
         if not transaction_reference:
             raise SquadError("Missing transaction reference")
         return await self._request("GET", f"/transaction/verify/{transaction_reference}")
+
+    async def initiate_payment(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return await self._request("POST", "/transaction/initiate", json=payload)
+
+    async def query_transactions(self, params: dict[str, Any]) -> dict[str, Any]:
+        return await self._request("GET", "/transaction", params=params)
+
+    async def get_virtual_account_by_number(self, virtual_account_number: str) -> dict[str, Any]:
+        return await self._request("GET", f"/virtual-account/customer/{virtual_account_number}")
+
+    async def get_virtual_account_by_customer_identifier(self, customer_identifier: str) -> dict[str, Any]:
+        return await self._request("GET", f"/virtual-account/{customer_identifier}")
+
+    async def list_merchant_virtual_accounts(self, page: int = 1, per_page: int = 50) -> dict[str, Any]:
+        return await self._request(
+            "GET",
+            "/virtual-account/merchant/accounts",
+            params={"page": page, "perPage": per_page},
+        )
+
+    async def list_customer_virtual_account_transactions(self, customer_identifier: str) -> dict[str, Any]:
+        return await self._request("GET", f"/virtual-account/customer/transactions/{customer_identifier}")
+
+    async def get_webhook_error_logs(self, page: int = 1, per_page: int = 100) -> dict[str, Any]:
+        return await self._request(
+            "GET",
+            "/virtual-account/webhook/logs",
+            params={"page": page, "perPage": per_page},
+        )
+
+    async def delete_webhook_error_log(self, transaction_reference: str) -> dict[str, Any]:
+        return await self._request("DELETE", f"/virtual-account/webhook/logs/{transaction_reference}")
+
+    async def create_dynamic_virtual_account(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return await self._request("POST", "/virtual-account/create-dynamic-virtual-account", json=payload)
+
+    async def initiate_dynamic_virtual_account(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return await self._request("POST", "/virtual-account/initiate-dynamic-virtual-account", json=payload)
+
+    async def get_dynamic_virtual_account_transactions(self, transaction_reference: str) -> dict[str, Any]:
+        return await self._request(
+            "GET",
+            f"/virtual-account/get-dynamic-virtual-account-transactions/{transaction_reference}",
+        )
+
+    async def simulate_virtual_account_payment(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return await self._request("POST", "/virtual-account/simulate/payment", json=payload)
+
+    async def lookup_bank_account(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return await self._request("POST", "/payout/account/lookup", json=payload)
+
+    async def create_transfer(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return await self._request("POST", "/payout/transfer", json=payload)
+
+    async def requery_transfer(self, transaction_reference: str) -> dict[str, Any]:
+        return await self._request("POST", "/payout/requery", json={"transaction_reference": transaction_reference})
+
+    async def list_transfers(self, page: int = 1, per_page: int = 50, direction: str = "DESC") -> dict[str, Any]:
+        return await self._request(
+            "GET",
+            "/payout/list",
+            params={"page": page, "perPage": per_page, "dir": direction},
+        )
 
 
 def parse_amount(value: Any) -> Decimal | None:

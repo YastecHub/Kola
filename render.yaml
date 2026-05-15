@@ -32,3 +32,5 @@ services:
         sync: false
       - key: KOLA_AI_KEY
         sync: false
+      - key: KOLA_AI_TIMEOUT_SECONDS
+        value: 5

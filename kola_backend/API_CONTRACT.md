@@ -142,7 +142,14 @@ Response:
 {
   "member_id": "member-uuid",
   "kola_score": 714,
-  "explanation": {},
+  "explanation": {
+    "basis": "xgboost_shap",
+    "shap": { "streak": 18, "catchup": 8, "amount_std": 28, "collector": 14, "trade": 12 },
+    "anomaly_flag": false,
+    "anomaly_reason": null,
+    "confidence": "High",
+    "confidence_detail": "13 weeks Squad-verified"
+  },
   "verified_events_count": 23,
   "streak_weeks": 11,
   "last_updated": "2026-05-13T10:00:00Z",
@@ -162,3 +169,38 @@ Example:
 ```text
 GET /api/scores/trader/08012345678
 ```
+
+## Protected Squad Gateway
+
+All routes below require:
+
+```http
+X-API-Key: <api-key>
+```
+
+They proxy relevant Squad APIs through the backend so the frontend/demo never exposes the Squad secret key.
+
+```http
+POST /api/squad/transactions/initiate
+GET /api/squad/transactions/{transaction_reference}/verify
+GET /api/squad/transactions?currency=NGN&start_date=2026-05-01&end_date=2026-05-15&page=1&perpage=50
+
+GET /api/squad/virtual-accounts
+GET /api/squad/virtual-accounts/number/{virtual_account_number}
+GET /api/squad/virtual-accounts/customer/{customer_identifier}
+GET /api/squad/virtual-accounts/customer/{customer_identifier}/transactions
+GET /api/squad/virtual-accounts/webhook-error-logs
+DELETE /api/squad/virtual-accounts/webhook-error-logs/{transaction_reference}
+
+POST /api/squad/virtual-accounts/dynamic
+POST /api/squad/virtual-accounts/dynamic/initiate
+GET /api/squad/virtual-accounts/dynamic/{transaction_reference}/transactions
+POST /api/squad/virtual-accounts/simulate-payment
+
+POST /api/squad/transfers/account-lookup
+POST /api/squad/transfers
+POST /api/squad/transfers/{transaction_reference}/requery
+GET /api/squad/transfers
+```
+
+The request and response bodies mirror Squad's official API payloads.
