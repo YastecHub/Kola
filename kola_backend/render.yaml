@@ -17,7 +17,7 @@ services:
       - key: SQUAD_PUBLIC_KEY
         sync: false
       - key: SQUAD_BASE_URL
-        value: https://api-d.squadco.com
+        value: https://sandbox-api-d.squadco.com
       - key: SQUAD_MOCK_MODE
         value: false
       - key: WEBHOOK_SECRET

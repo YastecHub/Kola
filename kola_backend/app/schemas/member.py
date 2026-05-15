@@ -3,18 +3,18 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class MemberCreate(BaseModel):
-    full_name: str
-    phone: str
-    email: EmailStr | None = None
-    middle_name: str | None = None
-    bvn: str | None = None
-    dob: str | None = None
-    gender: str | None = None
-    address: str | None = None
+    full_name: str = Field(..., examples=["Amina Bello"])
+    phone: str = Field(..., examples=["08012345678"])
+    email: EmailStr | None = Field(default=None, examples=["amina@example.com"])
+    middle_name: str | None = Field(default=None, examples=["Ngozi"])
+    bvn: str | None = Field(default=None, examples=["22343211654"])
+    dob: str | None = Field(default=None, examples=["07/19/1990"])
+    gender: str | None = Field(default=None, examples=["2"], description="'1' for male, '2' for female")
+    address: str | None = Field(default=None, examples=["22 Broad Street, Lagos"])
 
 
 class MemberRead(BaseModel):

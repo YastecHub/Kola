@@ -11,9 +11,14 @@ router = APIRouter(dependencies=[Depends(require_api_key)])
 
 
 def _squad_error(exc: SquadError) -> HTTPException:
+    detail: dict[str, object] = {"message": exc.message}
+    if exc.status_code is not None:
+        detail["squad_status_code"] = exc.status_code
+    if exc.response_body is not None:
+        detail["squad_response"] = exc.response_body
     return HTTPException(
         status_code=status.HTTP_502_BAD_GATEWAY,
-        detail="Squad API request failed",
+        detail=detail,
     )
 
 
@@ -56,6 +61,14 @@ async def query_transactions(
 
     try:
         return await SquadService().query_transactions(params)
+    except SquadError as exc:
+        raise _squad_error(exc) from exc
+
+
+@router.get("/wallet/balance")
+async def get_wallet_balance(currency_id: str = "NGN") -> dict[str, Any]:
+    try:
+        return await SquadService().get_wallet_balance(currency_id)
     except SquadError as exc:
         raise _squad_error(exc) from exc
 

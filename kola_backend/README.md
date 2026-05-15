@@ -175,6 +175,7 @@ These routes require `X-API-Key` and call Squad with the backend secret key:
 - `POST /api/squad/transactions/initiate`
 - `GET /api/squad/transactions/{transaction_reference}/verify`
 - `GET /api/squad/transactions`
+- `GET /api/squad/wallet/balance`
 - `GET /api/squad/virtual-accounts`
 - `GET /api/squad/virtual-accounts/number/{virtual_account_number}`
 - `GET /api/squad/virtual-accounts/customer/{customer_identifier}`

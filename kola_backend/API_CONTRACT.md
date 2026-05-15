@@ -184,6 +184,7 @@ They proxy relevant Squad APIs through the backend so the frontend/demo never ex
 POST /api/squad/transactions/initiate
 GET /api/squad/transactions/{transaction_reference}/verify
 GET /api/squad/transactions?currency=NGN&start_date=2026-05-01&end_date=2026-05-15&page=1&perpage=50
+GET /api/squad/wallet/balance?currency_id=NGN
 
 GET /api/squad/virtual-accounts
 GET /api/squad/virtual-accounts/number/{virtual_account_number}

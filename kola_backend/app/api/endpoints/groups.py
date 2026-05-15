@@ -68,9 +68,14 @@ async def create_group(payload: GroupCreate, session: AsyncSession = Depends(db_
     except SquadError as exc:
         await session.rollback()
         logger.exception("Unable to create Squad virtual accounts for group")
+        detail: dict[str, object] = {"message": "Unable to create Squad virtual accounts"}
+        if exc.status_code is not None:
+            detail["squad_status_code"] = exc.status_code
+        if exc.response_body is not None:
+            detail["squad_response"] = exc.response_body
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Unable to create Squad virtual accounts",
+            detail=detail,
         ) from exc
     except Exception:
         await session.rollback()

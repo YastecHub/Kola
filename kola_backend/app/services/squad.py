@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 import json
+import re
 import uuid
 from typing import Any
 
@@ -14,7 +15,17 @@ from app.utils.hmac import compute_hmac_sha512, normalize_signature, verify_hmac
 
 
 class SquadError(RuntimeError):
-    pass
+    def __init__(
+        self,
+        message: str,
+        *,
+        status_code: int | None = None,
+        response_body: dict[str, Any] | str | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.message = message
+        self.status_code = status_code
+        self.response_body = response_body
 
 
 @dataclass(slots=True)
@@ -51,8 +62,16 @@ class SquadService:
             response.raise_for_status()
             data: dict[str, Any] = response.json()
         except httpx.HTTPStatusError as exc:
-            logger.error("Squad API rejected request: status={} body={}", exc.response.status_code, exc.response.text)
-            raise SquadError("Squad API request failed") from exc
+            try:
+                response_body: dict[str, Any] | str = exc.response.json()
+            except ValueError:
+                response_body = exc.response.text
+            logger.error("Squad API rejected request: status={} body={}", exc.response.status_code, response_body)
+            raise SquadError(
+                "Squad API request failed",
+                status_code=exc.response.status_code,
+                response_body=response_body,
+            ) from exc
         except httpx.HTTPError as exc:
             logger.exception("Squad API transport error")
             raise SquadError("Unable to reach Squad API") from exc
@@ -82,13 +101,13 @@ class SquadService:
         payload = {
             "first_name": first_name,
             "last_name": last_name or first_name,
-            "middle_name": middle_name,
+            "middle_name": _clean_optional_text(middle_name),
             "mobile_num": phone,
             "email": email,
-            "bvn": bvn,
-            "dob": dob,
-            "gender": gender,
-            "address": address,
+            "bvn": _clean_bvn(bvn),
+            "dob": _clean_dob(dob),
+            "gender": _clean_gender(gender),
+            "address": _clean_optional_text(address),
             "customer_identifier": customer_identifier,
             "beneficiary_account": beneficiary_account or settings.squad_beneficiary_account,
         }
@@ -160,6 +179,9 @@ class SquadService:
     async def query_transactions(self, params: dict[str, Any]) -> dict[str, Any]:
         return await self._request("GET", "/transaction", params=params)
 
+    async def get_wallet_balance(self, currency_id: str = "NGN") -> dict[str, Any]:
+        return await self._request("GET", "/merchant/balance", params={"currency_id": currency_id})
+
     async def get_virtual_account_by_number(self, virtual_account_number: str) -> dict[str, Any]:
         return await self._request("GET", f"/virtual-account/customer/{virtual_account_number}")
 
@@ -228,3 +250,33 @@ def parse_amount(value: Any) -> Decimal | None:
     if decimal_value > 100_000_000 and decimal_value == decimal_value.to_integral_value():
         return decimal_value / Decimal("100")
     return decimal_value
+
+
+def _clean_optional_text(value: str | None) -> str | None:
+    if value is None:
+        return None
+    value = value.strip()
+    if not value or value.lower() == "string":
+        return None
+    return value
+
+
+def _clean_bvn(value: str | None) -> str | None:
+    value = _clean_optional_text(value)
+    if value is None:
+        return None
+    return value if re.fullmatch(r"\d{11}", value) else None
+
+
+def _clean_dob(value: str | None) -> str | None:
+    value = _clean_optional_text(value)
+    if value is None:
+        return None
+    return value if re.fullmatch(r"\d{2}/\d{2}/\d{4}", value) else None
+
+
+def _clean_gender(value: str | None) -> str | None:
+    value = _clean_optional_text(value)
+    if value is None:
+        return None
+    return value if value in {"1", "2"} else None
