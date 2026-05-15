@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
+import { fetchKolaBackend } from "@/lib/kolaBackend";
 
 export const dynamic = "force-dynamic";
 
-const API_BASE_URL = process.env.KOLA_API_URL ?? process.env.NEXT_PUBLIC_KOLA_API_URL ?? "http://127.0.0.1:8001";
 const AMINAT_PHONE_OR_ID = process.env.AMINAT_PHONE_OR_ID ?? process.env.NEXT_PUBLIC_AMINAT_PHONE_OR_ID ?? "08012345678";
-const API_KEY = process.env.KOLA_API_KEY;
 
 function eventTitle(event: Record<string, unknown>) {
   const type = String(event.event_type ?? "contribution");
@@ -31,12 +30,12 @@ function mapEvent(event: Record<string, unknown>, index: number) {
 }
 
 async function fetchEvents() {
-  const response = await fetch(`${API_BASE_URL}/api/scores/trader/${AMINAT_PHONE_OR_ID}`, {
-    headers: API_KEY ? { "X-API-Key": API_KEY } : undefined,
-    cache: "no-store",
-  });
+  const response = await fetchKolaBackend(`/api/scores/trader/${encodeURIComponent(AMINAT_PHONE_OR_ID)}`);
 
-  if (!response.ok) return [];
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new Error(typeof body.detail === "string" ? body.detail : `Backend returned ${response.status}`);
+  }
 
   const score = await response.json();
   const events = Array.isArray(score.events) ? score.events : [];
@@ -60,7 +59,8 @@ export async function GET(request: Request) {
           const events = await fetchEvents();
           controller.enqueue(encoder.encode(`event: kola-events\ndata: ${JSON.stringify(events)}\n\n`));
         } catch (error) {
-          controller.enqueue(encoder.encode(`event: kola-error\ndata: ${JSON.stringify({ message: "Unable to stream KOLA events" })}\n\n`));
+          const message = error instanceof Error ? error.message : "Unable to stream KOLA events";
+          controller.enqueue(encoder.encode(`event: kola-error\ndata: ${JSON.stringify({ message })}\n\n`));
         }
       };
 

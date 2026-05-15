@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from loguru import logger
 
-from app.api.endpoints import groups, scores, webhooks
+from app.api.endpoints import groups, scores, squad, webhooks
 from app.core.config import settings
 
 
@@ -31,6 +31,7 @@ def create_app() -> FastAPI:
     app.include_router(groups.router, prefix="/api/groups", tags=["groups"])
     app.include_router(webhooks.router, prefix="/api/webhooks", tags=["webhooks"])
     app.include_router(scores.router, prefix="/api/scores", tags=["scores"])
+    app.include_router(squad.router, prefix="/api/squad", tags=["squad"])
 
     @app.get("/health", tags=["health"])
     async def health() -> dict[str, str]:

@@ -123,7 +123,8 @@ export async function fetchAminatScore(): Promise<KolaScore> {
   const response = await fetch("/api/kola/aminat-score");
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch Aminat score: ${response.status}`);
+    const body = await response.json().catch(() => ({}));
+    throw new Error(body.error ?? `Failed to fetch Aminat score: ${response.status}`);
   }
 
   return normalizeScore((await response.json()) as BackendScore);
@@ -135,7 +136,8 @@ export async function fetchTraderScore(phoneOrId: string): Promise<KolaScore> {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch trader score: ${response.status}`);
+    const body = await response.json().catch(() => ({}));
+    throw new Error(body.error ?? `Failed to fetch trader score: ${response.status}`);
   }
 
   return normalizeScore((await response.json()) as BackendScore);

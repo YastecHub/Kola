@@ -12,7 +12,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.contribution import KolaScoreHistory
 from app.models.event import EconomicEvent
 from app.models.member import GroupMember
+<<<<<<< HEAD
 from app.services.scoring import score_member
+=======
+from app.services.ai import score_member_with_ai
+>>>>>>> 37105b7fa119671e2cc4326c4a3e2c81a3137fbf
 from app.services.squad import parse_amount
 
 
@@ -211,6 +215,7 @@ async def build_score_response(session: AsyncSession, member: GroupMember) -> di
     )
     events = list(events_result.scalars())
 
+<<<<<<< HEAD
     computed_score = score_member(events)
     latest_explanation = latest_score.explanation if latest_score else computed_score.explanation
     score = latest_score.score if latest_score else computed_score.score
@@ -226,6 +231,39 @@ async def build_score_response(session: AsyncSession, member: GroupMember) -> di
         "anomaly_flag": bool(anomaly_flag),
         "shap": shap,
         "explanation": latest_explanation,
+=======
+    ai_result = await score_member_with_ai(member.id, events)
+    if ai_result:
+        return {
+            "member_id": member.id,
+            "kola_score": ai_result["score"],
+            "explanation": {
+                "basis": "xgboost_shap",
+                "shap": ai_result.get("shap", {}),
+                "anomaly_flag": ai_result.get("anomaly_flag", False),
+                "anomaly_reason": ai_result.get("anomaly_reason"),
+                "confidence": ai_result.get("confidence", "Medium"),
+                "confidence_detail": ai_result.get("confidence_detail", ""),
+                "weeks_squad_verified": ai_result.get("weeks_squad_verified", event_count),
+                "probability": ai_result.get("probability"),
+            },
+            "verified_events_count": event_count,
+            "streak_weeks": ai_result.get("weeks_of_history", min(event_count, 12)),
+            "last_updated": datetime.now(timezone.utc),
+            "events": events,
+        }
+
+    fallback_score = min(850, 500 + (event_count * 8))
+    return {
+        "member_id": member.id,
+        "kola_score": latest_score.score if latest_score else fallback_score,
+        "explanation": latest_score.explanation
+        if latest_score
+        else {
+            "basis": "provisional_score",
+            "reason": "AI score service is not configured or unavailable; score is derived from verified Squad event count.",
+        },
+>>>>>>> 37105b7fa119671e2cc4326c4a3e2c81a3137fbf
         "verified_events_count": latest_score.verified_events_count if latest_score else event_count,
         "streak_weeks": latest_score.streak_weeks if latest_score else computed_score.streak_weeks,
         "last_updated": latest_score.created_at if latest_score else datetime.now(timezone.utc),

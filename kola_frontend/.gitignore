@@ -4,3 +4,4 @@ node_modules/
 pdf_pages/
 pdf_sheets/
 kola_prompt_extracted.txt
+.env

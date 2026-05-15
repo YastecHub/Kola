@@ -195,6 +195,21 @@ function AiActivityPanel({ scoreData }: { scoreData?: KolaScore | null }) {
   );
 }
 
+function BackendErrorBanner({ message }: { message: string }) {
+  return (
+    <div className="rounded-xl border border-error/20 bg-red-50 p-4 text-sm text-error">
+      <div className="flex items-start gap-3">
+        <X className="mt-0.5 shrink-0" size={16} />
+        <div>
+          <p className="font-semibold">Frontend could not reach the KOLA backend.</p>
+          <p className="mt-1">{message}</p>
+          <p className="mt-2 text-ink-600">Set `KOLA_API_URL` and `KOLA_API_KEY` in `kola_frontend/.env.local`, then restart `npm run dev`.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ScoreDisplay({ compact = false, value = 714, confidence = "Good · Low Risk" }: { compact?: boolean; value?: number; confidence?: string }) {
   const score = useCountUp(value, 1200, true, 600);
   return (
@@ -541,9 +556,18 @@ function DashboardShell({ children, title = "Contribution Feed" }: { children: R
 export function FeedPage() {
   const live = useSSE("/api/events");
   const [scoreData, setScoreData] = useState<KolaScore | null>(null);
+  const [scoreError, setScoreError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchAminatScore().then(setScoreData).catch(console.error);
+    fetchAminatScore()
+      .then((data) => {
+        setScoreData(data);
+        setScoreError(null);
+      })
+      .catch((error) => {
+        console.error(error);
+        setScoreError(error instanceof Error ? error.message : "Unable to fetch live score");
+      });
   }, []);
 
   const allEvents = [...live.events.map((e) => ({ ...e, tone: "success" as const })), ...events];
@@ -553,6 +577,7 @@ export function FeedPage() {
         <Card className="overflow-hidden p-6"><div className="grid gap-6 lg:grid-cols-[1fr_280px]"><div><h2 className="font-dm-serif text-2xl">Aminat Ibrahim</h2><p className="text-ink-500">+234 803 XXX XXXX</p><div className="mt-6"><ScoreDisplay compact value={scoreData?.score ?? 714} confidence={scoreData?.confidence ?? "Loading live score"} /></div></div><AiActivityPanel scoreData={scoreData} /></div></Card>
         <Card className="p-6" role="status"><div className="flex items-center justify-between"><div><h2 className="font-dm-serif text-2xl">Live Contribution Events</h2><p className="text-sm text-ink-500">{live.isConnected ? "Connected · Squad-verified" : live.error ?? "Reconnecting"}</p></div><span className={`h-3 w-3 rounded-full ${live.isConnected ? "animate-pulse bg-kola-500" : "bg-amber-400"}`} /></div><div className="mt-5 grid gap-3">{allEvents.map((event) => <EventCard key={event.title + event.meta} event={event} />)}</div></Card>
       </div>
+      {scoreError ? <div className="mt-6"><BackendErrorBanner message={scoreError} /></div> : null}
       <Card className="mt-6 overflow-x-auto p-6"><h2 className="font-dm-serif text-2xl">Members</h2><table className="mt-4 w-full min-w-[680px] text-left text-sm"><thead className="text-ink-500"><tr><th>Member</th><th>Account Number</th><th>Contributions</th><th>KOLA Score</th><th>Status</th></tr></thead><tbody>{members.map((m, index) => <tr key={m.account} className="border-t border-ink-100 hover:bg-kola-50"><td className="py-3">{m.name}</td><td className="font-mono">{m.account}</td><td>{index === 0 ? scoreData?.verified_events_count ?? 12 : 12}</td><td>{index === 0 ? scoreData?.score ?? m.score : m.score}</td><td>{index === 0 ? scoreData?.confidence ?? m.status : m.status}</td></tr>)}</tbody></table></Card>
     </DashboardShell>
   );
@@ -565,9 +590,18 @@ function EventCard({ event }: { event: { title: string; amount: string; meta: st
 
 export function ScorePage() {
   const [scoreData, setScoreData] = useState<KolaScore | null>(null);
+  const [scoreError, setScoreError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchAminatScore().then(setScoreData).catch(console.error);
+    fetchAminatScore()
+      .then((data) => {
+        setScoreData(data);
+        setScoreError(null);
+      })
+      .catch((error) => {
+        console.error(error);
+        setScoreError(error instanceof Error ? error.message : "Unable to fetch live score");
+      });
   }, []);
 
   if (scoreData === null) {
@@ -576,7 +610,7 @@ export function ScorePage() {
         <section className="hero-grid grain px-4 py-24 text-white sm:px-6 lg:px-8">
           <div className="mx-auto max-w-6xl"><Link href="/group/mile-12/feed" className="text-white/60">Groups / Mile 12 / Aminat Ibrahim</Link><div className="mt-8 grid gap-8 lg:grid-cols-[1fr_360px]"><div><h1 className="font-fraunces text-6xl">Aminat Ibrahim</h1><p className="mt-4 text-white/60">Member since March 2024 · 20-member Ajo group</p></div><div className="rounded-2xl border border-kola-400/30 bg-kola-950 p-6 text-white shadow-glow"><div className="h-4 w-24 animate-pulse rounded bg-white/20" /><div className="mt-4 h-16 w-44 animate-pulse rounded bg-white/20" /><div className="mt-4 h-7 w-32 animate-pulse rounded-full bg-kola-400/30" /><div className="mt-8 h-3 animate-pulse rounded-full bg-white/20" /></div></div></div>
         </section>
-        <section className="px-4 py-10 sm:px-6 lg:px-8"><div className="mx-auto grid max-w-6xl gap-6"><div className="grid gap-4 sm:grid-cols-3">{[["12","Squad-verified events"],["156%","Contribution rate"],["N60,000","Total contributed"]].map(([n,l]) => <Card key={l} className="p-6"><div className="font-mono text-3xl text-kola-600">{n}</div><p className="text-ink-500">{l}</p></Card>)}</div><Card className="p-6"><div className="h-8 w-56 animate-pulse rounded bg-ink-100" /><div className="mt-8 space-y-4">{Array.from({ length: 5 }).map((_, index) => <div key={index} className="grid grid-cols-[150px_1fr_42px] items-center gap-3"><div className="h-4 animate-pulse rounded bg-ink-100" /><div className="h-4 animate-pulse rounded bg-ink-100" /><div className="h-4 animate-pulse rounded bg-ink-100" /></div>)}</div></Card></div></section>
+        <section className="px-4 py-10 sm:px-6 lg:px-8"><div className="mx-auto grid max-w-6xl gap-6">{scoreError ? <BackendErrorBanner message={scoreError} /> : null}<div className="grid gap-4 sm:grid-cols-3">{[["--","Squad-verified events"],["--","Current streak"],["Live","Backend status"]].map(([n,l]) => <Card key={l} className="p-6"><div className="font-mono text-3xl text-kola-600">{n}</div><p className="text-ink-500">{l}</p></Card>)}</div><Card className="p-6"><div className="h-8 w-56 animate-pulse rounded bg-ink-100" /><div className="mt-8 space-y-4">{Array.from({ length: 5 }).map((_, index) => <div key={index} className="grid grid-cols-[150px_1fr_42px] items-center gap-3"><div className="h-4 animate-pulse rounded bg-ink-100" /><div className="h-4 animate-pulse rounded bg-ink-100" /><div className="h-4 animate-pulse rounded bg-ink-100" /></div>)}</div></Card></div></section>
       </main>
     );
   }
