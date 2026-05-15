@@ -14,6 +14,11 @@ class GroupCreate(BaseModel):
     description: str | None = Field(default=None, examples=["Weekly trader contribution group"])
     contribution_amount: Decimal | None = Field(default=None, ge=0, examples=["5000.00"])
     contribution_frequency: str = Field("weekly", max_length=32, examples=["weekly"])
+    beneficiary_account: str | None = Field(
+        default=None,
+        examples=["4920299492"],
+        description="10-digit GTBank settlement account required by Squad virtual accounts.",
+    )
     members: list[MemberCreate] = Field(..., min_length=1)
 
     model_config = ConfigDict(
@@ -23,6 +28,7 @@ class GroupCreate(BaseModel):
                 "description": "Weekly trader contribution group",
                 "contribution_amount": "5000.00",
                 "contribution_frequency": "weekly",
+                "beneficiary_account": "4920299492",
                 "members": [
                     {
                         "full_name": "Amina Bello",

@@ -121,7 +121,7 @@ class SquadService:
             "gender": _clean_gender(gender),
             "address": _clean_optional_text(address),
             "customer_identifier": customer_identifier,
-            "beneficiary_account": beneficiary_account or settings.squad_beneficiary_account,
+            "beneficiary_account": _clean_account_number(beneficiary_account or settings.squad_beneficiary_account),
         }
         payload = {key: value for key, value in payload.items() if value is not None}
         data = await self._request("POST", "/virtual-account", json=payload)
@@ -292,3 +292,10 @@ def _clean_gender(value: str | None) -> str | None:
     if value is None:
         return None
     return value if value in {"1", "2"} else None
+
+
+def _clean_account_number(value: str | None) -> str | None:
+    value = _clean_optional_text(value)
+    if value is None:
+        return None
+    return value if re.fullmatch(r"\d{10}", value) else None

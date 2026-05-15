@@ -24,6 +24,7 @@ Copy-Item .env.example .env
 ```
 
 Edit `.env` with your Supabase and Squad credentials.
+Set `SQUAD_BENEFICIARY_ACCOUNT` to your 10-digit GTBank settlement account so group creation does not need to send `beneficiary_account` each time.
 
 For local endpoint testing without calling Squad, set:
 
@@ -112,6 +113,7 @@ curl -X POST http://127.0.0.1:8000/api/groups/ `
     "description": "Weekly trader contribution group",
     "contribution_amount": "5000.00",
     "contribution_frequency": "weekly",
+    "beneficiary_account": "4920299492",
     "members": [
       {
         "full_name": "Amina Bello",

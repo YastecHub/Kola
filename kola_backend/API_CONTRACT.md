@@ -59,6 +59,7 @@ Request:
   "description": "Weekly trader contribution group",
   "contribution_amount": "5000.00",
   "contribution_frequency": "weekly",
+  "beneficiary_account": "4920299492",
   "members": [
     {
       "full_name": "Amina Bello",
