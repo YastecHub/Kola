@@ -1,0 +1,6 @@
+.next/
+node_modules/
+*.log
+pdf_pages/
+pdf_sheets/
+kola_prompt_extracted.txt
