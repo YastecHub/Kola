@@ -57,6 +57,24 @@ Start the API:
 uvicorn app.main:app --reload
 ```
 
+## Docker
+
+From the repository root:
+
+```powershell
+docker build -t kola-backend .
+docker run --env-file .\kola_backend\.env -p 8000:8000 kola-backend
+```
+
+From this backend folder:
+
+```powershell
+docker build -t kola-backend .
+docker run --env-file .env -p 8000:8000 kola-backend
+```
+
+For Render Docker deploys, either use the root `Dockerfile`, or set the Blueprint path to `kola_backend/render.yaml`.
+
 Health check:
 
 ```powershell
