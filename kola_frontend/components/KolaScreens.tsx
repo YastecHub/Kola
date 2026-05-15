@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { ArrowLeft, ArrowRight, Banknote, Check, CheckCircle2, ChevronDown, Clipboard, Eye, EyeOff, Lock, Menu, Phone, Plus, Search, ShieldCheck, Trash2, UserRound, X } from "lucide-react";
+import { Activity, ArrowLeft, ArrowRight, Banknote, Check, CheckCircle2, ChevronDown, Clipboard, Cpu, CreditCard, Eye, EyeOff, Menu, Phone, Plus, Radio, Search, ShieldCheck, Trash2, UserRound, X } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -31,9 +31,9 @@ const fade = {
 function Orbs() {
   return (
     <>
-      <span className="absolute left-[12%] top-[18%] h-56 w-72 animate-float rounded-full bg-kola-400/15 blur-3xl" />
-      <span className="absolute right-[10%] top-[30%] h-72 w-52 animate-float rounded-full bg-kola-300/10 blur-3xl [animation-duration:25s]" />
-      <span className="absolute bottom-[8%] left-[35%] h-44 w-96 animate-float rounded-full bg-amber-400/10 blur-3xl [animation-duration:30s]" />
+      <span className="absolute inset-x-0 top-20 h-px bg-gradient-to-r from-transparent via-kola-300/40 to-transparent" />
+      <span className="absolute inset-x-0 bottom-24 h-px bg-gradient-to-r from-transparent via-amber-300/30 to-transparent" />
+      <span className="absolute left-1/2 top-0 h-full w-px bg-gradient-to-b from-transparent via-white/10 to-transparent" />
     </>
   );
 }
@@ -137,6 +137,64 @@ function eventFromBackend(event: NonNullable<KolaScore["events"]>[number], index
   };
 }
 
+function RealtimePlatformStrip() {
+  const items = [
+    { icon: Radio, label: "Squad Webhooks", value: "Listening" },
+    { icon: Cpu, label: "AI Scoring", value: "Live SHAP" },
+    { icon: CreditCard, label: "Virtual Accounts", value: "Auto-issued" },
+  ];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 22 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 1.18, duration: 0.55 }}
+      className="mx-auto mt-12 grid max-w-4xl gap-3 rounded-2xl border border-white/15 bg-white/[0.08] p-3 text-left shadow-glow backdrop-blur-xl sm:grid-cols-3"
+    >
+      {items.map(({ icon: Icon, label, value }) => (
+        <div key={label} className="group rounded-xl border border-white/10 bg-kola-950/35 p-4 transition duration-300 hover:-translate-y-1 hover:border-kola-300/50 hover:bg-white/[0.1]">
+          <div className="flex items-center justify-between">
+            <Icon className="text-kola-300" size={20} />
+            <span className="live-dot" />
+          </div>
+          <p className="mt-4 text-xs uppercase tracking-[0.18em] text-white/45">{label}</p>
+          <p className="mt-1 font-mono text-lg text-white">{value}</p>
+        </div>
+      ))}
+    </motion.div>
+  );
+}
+
+function AiActivityPanel({ scoreData }: { scoreData?: KolaScore | null }) {
+  const score = scoreData?.score ?? 714;
+  const confidence = scoreData?.confidence ?? "Awaiting live model";
+  const eventsCount = scoreData?.verified_events_count ?? 0;
+
+  return (
+    <div className="glass-card-dark p-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-[0.18em] text-white/45">Realtime Model</p>
+          <h3 className="mt-1 font-dm-serif text-2xl text-white">Underwriting engine</h3>
+        </div>
+        <Activity className="animate-pulse text-kola-300" />
+      </div>
+      <div className="mt-5 grid gap-3">
+        {[
+          ["Score stream", String(score)],
+          ["Confidence", confidence],
+          ["Verified events", String(eventsCount)],
+        ].map(([label, value]) => (
+          <div key={label} className="flex items-center justify-between border-b border-white/10 pb-3 text-sm">
+            <span className="text-white/50">{label}</span>
+            <span className="font-mono text-kola-200">{value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function ScoreDisplay({ compact = false, value = 714, confidence = "Good · Low Risk" }: { compact?: boolean; value?: number; confidence?: string }) {
   const score = useCountUp(value, 1200, true, 600);
   return (
@@ -184,6 +242,7 @@ function LandingHero() {
           <Button href="/onboarding">Start Your Group <ArrowRight size={18} /></Button>
           <Button href="/lender/dashboard" variant="secondary">For Lenders <ArrowRight size={18} /></Button>
         </motion.div>
+        <RealtimePlatformStrip />
         <div className="mt-12 flex flex-wrap justify-center gap-5 text-sm text-white/70">
           {trustItems.map(({ icon: Icon, label }) => <span key={label} className="inline-flex items-center gap-2"><Icon size={16} />{label}</span>)}
         </div>
@@ -273,6 +332,7 @@ function AuthShell({ mode }: { mode: "signin" | "signup" }) {
           <div className="mt-10 grid max-w-md gap-3">
             {["Mama Bisi · 42 members", "GTBank MFB · lender", "Mile 12 Traders · verified"].map((item) => <Card key={item} tone="dark" className="p-4 text-sm text-white/75">{item}</Card>)}
           </div>
+          <div className="mt-5 max-w-md"><AiActivityPanel /></div>
         </div>
       </section>
       <section className="flex items-center justify-center px-4 py-12">
@@ -458,10 +518,14 @@ function CopyRow({ member }: { member: KolaGroup["members"][number] }) {
 
 function DashboardShell({ children, title = "Contribution Feed" }: { children: React.ReactNode; title?: string }) {
   return (
-    <main className="min-h-screen bg-ink-50 lg:grid lg:grid-cols-[280px_1fr]">
-      <aside className="hidden bg-kola-900 p-6 text-white lg:flex lg:flex-col">
+    <main className="app-surface min-h-screen lg:grid lg:grid-cols-[280px_1fr]">
+      <aside className="hidden border-r border-white/10 bg-kola-950/95 p-6 text-white shadow-glow lg:flex lg:flex-col">
         <Logo />
         <p className="mt-10 text-sm text-white/50">Mile 12 Tomato Traders</p>
+        <div className="mt-4 rounded-xl border border-kola-300/20 bg-white/[0.06] p-4">
+          <div className="flex items-center gap-2 text-sm text-kola-200"><Radio size={16} /> Live backend sync</div>
+          <p className="mt-2 text-xs text-white/45">Events, scores, and virtual accounts are read through KOLA API proxies.</p>
+        </div>
         <nav className="mt-6 grid gap-2 text-white/70">{["Overview","Members","Contributions","Payouts","Settings"].map((item) => <Link key={item} className="rounded-lg px-3 py-2 hover:bg-white/10" href="/group/mile-12/feed">{item}</Link>)}</nav>
         <div className="mt-auto flex items-center gap-3 text-sm text-white/70"><span className="grid h-9 w-9 place-items-center rounded-full bg-kola-500">A</span>Aminat · Sign out</div>
       </aside>
@@ -486,7 +550,7 @@ export function FeedPage() {
   return (
     <DashboardShell>
       <div className="mt-8 grid gap-6 xl:grid-cols-[1.2fr_.8fr]">
-        <Card className="p-6"><h2 className="font-dm-serif text-2xl">Aminat Ibrahim</h2><p className="text-ink-500">+234 803 XXX XXXX</p><div className="mt-6"><ScoreDisplay compact value={scoreData?.score ?? 714} confidence={scoreData?.confidence ?? "Loading live score"} /></div></Card>
+        <Card className="overflow-hidden p-6"><div className="grid gap-6 lg:grid-cols-[1fr_280px]"><div><h2 className="font-dm-serif text-2xl">Aminat Ibrahim</h2><p className="text-ink-500">+234 803 XXX XXXX</p><div className="mt-6"><ScoreDisplay compact value={scoreData?.score ?? 714} confidence={scoreData?.confidence ?? "Loading live score"} /></div></div><AiActivityPanel scoreData={scoreData} /></div></Card>
         <Card className="p-6" role="status"><div className="flex items-center justify-between"><div><h2 className="font-dm-serif text-2xl">Live Contribution Events</h2><p className="text-sm text-ink-500">{live.isConnected ? "Connected · Squad-verified" : live.error ?? "Reconnecting"}</p></div><span className={`h-3 w-3 rounded-full ${live.isConnected ? "animate-pulse bg-kola-500" : "bg-amber-400"}`} /></div><div className="mt-5 grid gap-3">{allEvents.map((event) => <EventCard key={event.title + event.meta} event={event} />)}</div></Card>
       </div>
       <Card className="mt-6 overflow-x-auto p-6"><h2 className="font-dm-serif text-2xl">Members</h2><table className="mt-4 w-full min-w-[680px] text-left text-sm"><thead className="text-ink-500"><tr><th>Member</th><th>Account Number</th><th>Contributions</th><th>KOLA Score</th><th>Status</th></tr></thead><tbody>{members.map((m, index) => <tr key={m.account} className="border-t border-ink-100 hover:bg-kola-50"><td className="py-3">{m.name}</td><td className="font-mono">{m.account}</td><td>{index === 0 ? scoreData?.verified_events_count ?? 12 : 12}</td><td>{index === 0 ? scoreData?.score ?? m.score : m.score}</td><td>{index === 0 ? scoreData?.confidence ?? m.status : m.status}</td></tr>)}</tbody></table></Card>
@@ -496,7 +560,7 @@ export function FeedPage() {
 
 function EventCard({ event }: { event: { title: string; amount: string; meta: string; tone: "success" | "warning" | "info" } }) {
   const color = event.tone === "success" ? "border-kola-400" : event.tone === "warning" ? "border-amber-400" : "border-info";
-  return <div className={`rounded-xl border bg-white p-4 shadow-sm ${color} border-l-4`}><div className="flex justify-between gap-3"><h3 className="font-semibold">{event.title}</h3><span className="font-mono">{event.amount}</span></div><p className="mt-1 text-sm text-ink-500">{event.meta}</p><Badge>Squad verified</Badge></div>;
+  return <motion.div layout initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} className={`rounded-xl border bg-white/90 p-4 shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:shadow-green ${color} border-l-4`}><div className="flex justify-between gap-3"><h3 className="font-semibold">{event.title}</h3><span className="font-mono">{event.amount}</span></div><p className="mt-1 text-sm text-ink-500">{event.meta}</p><Badge>Squad verified</Badge></motion.div>;
 }
 
 export function ScorePage() {
@@ -548,7 +612,10 @@ export function ScorePage() {
                 {modelCards.map(([label, value]) => <div key={label} className="border border-white/10 bg-white/[0.04] p-4"><p className="text-xs uppercase tracking-[0.2em] text-white/40">{label}</p><p className="mt-2 font-mono text-xl text-kola-300">{value}</p></div>)}
               </div>
             </div>
-            <ScoreDisplay compact value={scoreData.score} confidence={scoreData.confidence} />
+            <div className="grid gap-4">
+              <ScoreDisplay compact value={scoreData.score} confidence={scoreData.confidence} />
+              <AiActivityPanel scoreData={scoreData} />
+            </div>
           </div>
         </div>
       </section>
@@ -622,8 +689,8 @@ export function LenderDashboard({ queryOnly = false }: { queryOnly?: boolean }) 
   }, [queryOnly]);
 
   return (
-    <main className="min-h-screen bg-ink-50 lg:grid lg:grid-cols-[280px_1fr]">
-      <aside className="hidden bg-ink-900 p-6 text-white lg:block"><Logo /><p className="mt-8 text-sm text-white/60">KOLA · Lender Portal</p><nav className="mt-8 grid gap-2 text-white/70">{["Dashboard","Query Score","Recent Queries","API Keys","Settings"].map((n) => <Link href="/lender/dashboard" key={n} className="rounded-lg px-3 py-2 hover:bg-white/10">{n}</Link>)}</nav></aside>
+    <main className="app-surface min-h-screen lg:grid lg:grid-cols-[280px_1fr]">
+      <aside className="hidden bg-ink-950 p-6 text-white lg:block"><Logo /><p className="mt-8 text-sm text-white/60">KOLA · Lender Portal</p><div className="mt-5 rounded-xl border border-white/10 bg-white/[0.06] p-4"><div className="flex items-center gap-2 text-sm text-kola-200"><Cpu size={16} /> Model endpoint online</div><p className="mt-2 text-xs text-white/45">Queries run through the Next proxy into FastAPI.</p></div><nav className="mt-8 grid gap-2 text-white/70">{["Dashboard","Query Score","Recent Queries","API Keys","Settings"].map((n) => <Link href="/lender/dashboard" key={n} className="rounded-lg px-3 py-2 hover:bg-white/10">{n}</Link>)}</nav></aside>
       <section className="p-4 sm:p-6 lg:p-10">
         <p className="text-sm text-ink-500">Good morning, GTBank MFB.</p>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{lenderStats.map(([n,l]) => <Card key={l} className="p-5"><div className="font-mono text-3xl text-kola-600">{n}</div><p className="text-sm text-ink-500">{l}</p></Card>)}</div>
