@@ -1,3 +1,17 @@
+<<<<<<< HEAD
+## KOLA
+
+Nigeria's informal credit bureau for Ajo groups.
+
+Backend implementation lives in [kola_backend](./kola_backend).
+
+## Team
+
+- Product / Pitch - Peculiar
+- Backend / Squad Integration - Yasir
+- AI / ML - David
+- Frontend / Demo - Progress
+=======
 # KOLA — Credit Bureau for Nigeria's Ajo Economy
 
 KOLA is a credit scoring infrastructure built on Squad's payment rails. It converts Ajo group contribution history — verified through Squad Virtual Accounts and HMAC-signed webhooks — into portable credit identities for Nigeria's 14 million informal savers.
@@ -328,3 +342,4 @@ The market: Nigeria, where the problem is 10x larger and 0% served.
 ## Team
 
 Built by Team KOLA for GTCO SquadCo Hackathon 3.0 — Challenge 02: Smart Systems, The Intelligent Economy.
+>>>>>>> 37105b7fa119671e2cc4326c4a3e2c81a3137fbf

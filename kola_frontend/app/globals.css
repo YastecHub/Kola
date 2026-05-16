@@ -93,6 +93,32 @@ a {
   backdrop-filter: blur(16px);
 }
 
+.app-surface {
+  background:
+    linear-gradient(135deg, rgba(31, 132, 80, 0.08), transparent 36%),
+    linear-gradient(315deg, rgba(2, 132, 199, 0.08), transparent 32%),
+    var(--ink-50);
+}
+
+.live-dot {
+  position: relative;
+  display: inline-flex;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--kola-300);
+  box-shadow: 0 0 0 6px rgba(77, 194, 138, 0.12);
+}
+
+.live-dot::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: inherit;
+  border: 1px solid rgba(77, 194, 138, 0.45);
+  animation: live-ping 1.8s ease-out infinite;
+}
+
 .glass-card-dark {
   background: rgba(12, 10, 9, 0.68);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -136,6 +162,17 @@ a {
 @keyframes confetti {
   to {
     transform: translate(var(--x), var(--y)) rotate(680deg);
+    opacity: 0;
+  }
+}
+
+@keyframes live-ping {
+  from {
+    transform: scale(0.6);
+    opacity: 0.75;
+  }
+  to {
+    transform: scale(1.8);
     opacity: 0;
   }
 }

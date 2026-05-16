@@ -12,7 +12,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.contribution import KolaScoreHistory
 from app.models.event import EconomicEvent
 from app.models.member import GroupMember
+<<<<<<< HEAD
+from app.services.scoring import score_member
+=======
 from app.services.ai import score_member_with_ai
+>>>>>>> 37105b7fa119671e2cc4326c4a3e2c81a3137fbf
 from app.services.squad import parse_amount
 
 
@@ -211,6 +215,23 @@ async def build_score_response(session: AsyncSession, member: GroupMember) -> di
     )
     events = list(events_result.scalars())
 
+<<<<<<< HEAD
+    computed_score = score_member(events)
+    latest_explanation = latest_score.explanation if latest_score else computed_score.explanation
+    score = latest_score.score if latest_score else computed_score.score
+    shap = latest_explanation.get("shap", computed_score.shap) if isinstance(latest_explanation, dict) else computed_score.shap
+    confidence = latest_explanation.get("confidence", computed_score.confidence) if isinstance(latest_explanation, dict) else computed_score.confidence
+    anomaly_flag = latest_explanation.get("anomaly_flag", computed_score.anomaly_flag) if isinstance(latest_explanation, dict) else computed_score.anomaly_flag
+
+    return {
+        "member_id": member.id,
+        "kola_score": score,
+        "score": score,
+        "confidence": str(confidence),
+        "anomaly_flag": bool(anomaly_flag),
+        "shap": shap,
+        "explanation": latest_explanation,
+=======
     ai_result = await score_member_with_ai(member.id, events)
     if ai_result:
         return {
@@ -242,8 +263,9 @@ async def build_score_response(session: AsyncSession, member: GroupMember) -> di
             "basis": "provisional_score",
             "reason": "AI score service is not configured or unavailable; score is derived from verified Squad event count.",
         },
+>>>>>>> 37105b7fa119671e2cc4326c4a3e2c81a3137fbf
         "verified_events_count": latest_score.verified_events_count if latest_score else event_count,
-        "streak_weeks": latest_score.streak_weeks if latest_score else min(event_count, 12),
+        "streak_weeks": latest_score.streak_weeks if latest_score else computed_score.streak_weeks,
         "last_updated": latest_score.created_at if latest_score else datetime.now(timezone.utc),
         "events": events,
     }
