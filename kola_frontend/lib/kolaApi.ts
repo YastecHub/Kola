@@ -157,3 +157,57 @@ export async function createKolaGroup(payload: CreateGroupPayload): Promise<Kola
 
   return response.json() as Promise<KolaGroup>;
 }
+
+const AI_API_URL = process.env.KOLA_AI_URL ?? "https://web-production-48a47.up.railway.app";
+const AI_API_KEY = process.env.KOLA_AI_KEY ?? "kola-dev-key-2025";
+
+export async function fetchAminatAiScore(): Promise<KolaScore> {
+  const res = await fetch(`${AI_API_URL}/score`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Api-Key": AI_API_KEY,
+    },
+    body: JSON.stringify({
+      member_id: "aminat-001",
+      collector_trust: 1,
+      events: [
+        { type: "contribution", week: 1,  amount: 5200, date: "2025-01-07", days_late: 0 },
+        { type: "contribution", week: 2,  amount: 4900, date: "2025-01-14", days_late: 0 },
+        { type: "contribution", week: 3,  amount: 5000, date: "2025-01-21", days_late: 0 },
+        { type: "contribution", week: 4,  amount: 5100, date: "2025-01-28", days_late: 0 },
+        { type: "contribution", week: 5,  amount: 4800, date: "2025-02-04", days_late: 0 },
+        { type: "contribution", week: 6,  amount: 5000, date: "2025-02-11", days_late: 0 },
+        { type: "contribution", week: 7,  amount: 5300, date: "2025-02-21", days_late: 3 },
+        { type: "contribution", week: 8,  amount: 4700, date: "2025-02-25", days_late: 0 },
+        { type: "contribution", week: 9,  amount: 5100, date: "2025-03-04", days_late: 0 },
+        { type: "contribution", week: 10, amount: 4900, date: "2025-03-11", days_late: 0 },
+        { type: "contribution", week: 11, amount: 5000, date: "2025-03-18", days_late: 0 },
+        { type: "contribution", week: 12, amount: 5200, date: "2025-03-25", days_late: 0 },
+        { type: "contribution", week: 13, amount: 4800, date: "2025-04-01", days_late: 0 },
+      ],
+      trade_events: [
+        { type: "trade", amount: 47500, date: "2025-05-05", counterparty_nuban: "9034512987" },
+        { type: "trade", amount: 52000, date: "2025-03-10", counterparty_nuban: "9034512987" },
+      ],
+    }),
+  });
+
+  if (!res.ok) throw new Error("KOLA AI API error");
+
+  const data = await res.json();
+
+  return {
+    score: data.score,
+    confidence: data.confidence,
+    anomaly_flag: data.anomaly_flag ?? false,
+    shap: {
+      streak: data.shap?.streak ?? 0,
+      trade: data.shap?.trade ?? 0,
+      catchup: data.shap?.catchup ?? 0,
+      collector: data.shap?.collector ?? 0,
+      amount_std: data.shap?.amount_std ?? 0,
+    },
+    verified_events_count: data.weeks_of_history,
+  };
+}

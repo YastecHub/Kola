@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/Input";
 import { LoadingDots } from "@/components/ui/LoadingDots";
 import { Logo } from "@/components/Logo";
 import { approvalSignals, events, lenderStats, members, scoreFactors, stats, steps, trustItems } from "@/lib/data";
-import { createKolaGroup, fetchAminatScore, fetchTraderScore, KolaGroup, KolaScore } from "@/lib/kolaApi";
+import { createKolaGroup, fetchAminatAiScore, fetchAminatScore, fetchTraderScore, KolaGroup, KolaScore } from "@/lib/kolaApi";
 import { useClipboard } from "@/hooks/useClipboard";
 import { useCountUp } from "@/hooks/useCountUp";
 import { useSSE } from "@/hooks/useSSE";
@@ -558,15 +558,27 @@ export function FeedPage() {
   const [scoreData, setScoreData] = useState<KolaScore | null>(null);
   const [scoreError, setScoreError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchAminatScore()
-      .then((data) => {
-        setScoreData(data);
-        setScoreError(null);
-      })
-      .catch((error) => {
-        console.error(error);
-        setScoreError(error instanceof Error ? error.message : "Unable to fetch live score");
+ useEffect(() => {
+    Promise.allSettled([fetchAminatAiScore(), fetchAminatScore()])
+      .then(([aiResult, backendResult]) => {
+        const ai = aiResult.status === "fulfilled" ? aiResult.value : null;
+        const backend = backendResult.status === "fulfilled" ? backendResult.value : null;
+
+        if (ai) {
+          setScoreData({
+            ...ai,
+            events: backend?.events ?? [],
+            verified_events_count: backend?.verified_events_count ?? ai.verified_events_count,
+            streak_weeks: backend?.streak_weeks,
+            last_updated: backend?.last_updated,
+          });
+          setScoreError(null);
+        } else if (backend) {
+          setScoreData(backend);
+          setScoreError(null);
+        } else {
+          setScoreError("Unable to reach both AI and backend APIs.");
+        }
       });
   }, []);
 
@@ -592,18 +604,29 @@ export function ScorePage() {
   const [scoreData, setScoreData] = useState<KolaScore | null>(null);
   const [scoreError, setScoreError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchAminatScore()
-      .then((data) => {
-        setScoreData(data);
-        setScoreError(null);
-      })
-      .catch((error) => {
-        console.error(error);
-        setScoreError(error instanceof Error ? error.message : "Unable to fetch live score");
+useEffect(() => {
+    Promise.allSettled([fetchAminatAiScore(), fetchAminatScore()])
+      .then(([aiResult, backendResult]) => {
+        const ai = aiResult.status === "fulfilled" ? aiResult.value : null;
+        const backend = backendResult.status === "fulfilled" ? backendResult.value : null;
+
+        if (ai) {
+          setScoreData({
+            ...ai,
+            events: backend?.events ?? [],
+            verified_events_count: backend?.verified_events_count ?? ai.verified_events_count,
+            streak_weeks: backend?.streak_weeks,
+            last_updated: backend?.last_updated,
+          });
+          setScoreError(null);
+        } else if (backend) {
+          setScoreData(backend);
+          setScoreError(null);
+        } else {
+          setScoreError("Unable to reach both AI and backend APIs.");
+        }
       });
   }, []);
-
   if (scoreData === null) {
     return (
       <main>
